@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"flag"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,8 +29,19 @@ type RSSFeedConfiguration struct {
 }
 
 func main() {
+	configurationFile := flag.String("config", "", "Path to the configuration file")
+	flag.Parse()
+
+	if *configurationFile == "" {
+		envVariableFile, found := os.LookupEnv("versioninaatorConfiguration")
+		if !found{
+			log.Fatalf("You must set a configuration file either by env variable (versioninaatorConfiguration) or cli argument (-config <configName>)")
+		}
+		*configurationFile = envVariableFile
+	}
+
 	// Read the YAML file
-	data, err := os.ReadFile("rssFeedConfiguration.yaml")
+	data, err := os.ReadFile(*configurationFile)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
