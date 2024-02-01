@@ -34,7 +34,7 @@ func main() {
 
 	if *configurationFile == "" {
 		envVariableFile, found := os.LookupEnv("versioninaatorConfiguration")
-		if !found{
+		if !found {
 			log.Fatalf("You must set a configuration file either by env variable (versioninaatorConfiguration) or cli argument (-config <configName>)")
 		}
 		*configurationFile = envVariableFile
