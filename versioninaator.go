@@ -1,31 +1,31 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"flag"
 
 	"gopkg.in/yaml.v3"
 )
 
-type RSSFeedConfigurationApiInfo struct {
-	Url       string                          `yaml:"url"`
-	Uri       string                          `yaml:"uri"`
-	ChartInfo []RSSFeedConfigurationChartInfo `yaml:"chartInfo"`
+type RemoteApiInfo struct {
+	Url       string            `yaml:"url"`
+	Uri       string            `yaml:"uri"`
+	ChartInfo []RemoteChartInfo `yaml:"chartInfo"`
 }
 
-type RSSFeedConfigurationChartInfo struct {
-	Repository string                          `yaml:"repository"`
-	Chart      []RSSFeedConfigurationChartName `yaml:"chart"`
+type RemoteChartInfo struct {
+	Repository string            `yaml:"repository"`
+	Chart      []RemoteChartName `yaml:"chart"`
 }
 
-type RSSFeedConfigurationChartName struct {
+type RemoteChartName struct {
 	Name string `yaml:"name"`
 }
 
-type RSSFeedConfiguration struct {
-	ApiInfo []RSSFeedConfigurationApiInfo `yaml:"apiInfo"`
+type Config struct {
+	RemoteAPIInfo []RemoteApiInfo `yaml:"RemoteAPIInfo"`
 }
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Parse the data into the Config struct
-	var rssFeedConfiguration RSSFeedConfiguration
+	var rssFeedConfiguration Config
 	if err := yaml.Unmarshal(data, &rssFeedConfiguration); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
