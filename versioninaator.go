@@ -9,21 +9,43 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type RemoteAPIInfo struct {
-	RemoteAPIInfo []struct {
-		URL       string `yaml:"url"`
-		URI       string `yaml:"uri"`
-		ChartInfo []struct {
-			Repository string `yaml:"repository"`
-			Chart      []struct {
-				Name string `yaml:"name"`
-			} `yaml:"chart"`
-		} `yaml:"chartInfo"`
-	} `yaml:"RemoteAPIInfo"`
+type deploymentRepositories struct {
+	DeploymentRepositories []struct {
+		RepoURL string `yaml:"URL"`
+		Path    string `yaml:"path"`
+	} `yaml:"deploymentRepositories"`
+}
+
+type helmChart struct {
+	ApiVersion   string `yaml:"apiVersion"`
+	Name         string `yaml:"name"`
+	Description  string `yaml:"description"`
+	Version      string `yaml:""`
+	AppVersion   string `yaml:"appVersion"`
+	Dependencies []struct {
+		Name       string `yaml:"name"`
+		Version    string `yaml:"version"`
+		Repository string `yaml:"repository"`
+	} `yaml:"dependencies"`
+}
+
+func loadlocalChart(pathToLocalChart string) {
+	data, err := os.ReadFile(pathToLocalChart)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var helmConfig helmChart
+	if err := yaml.Unmarshal(data, &helmConfig); err != nil {
+		log.Fatalf("Failed to parse data: %v", err)
+	}
+
+	fmt.Printf("%+v\n", helmConfig)
 }
 
 func main() {
 	configurationFile := flag.String("config", "", "Path to the configuration file")
+	debugChart := flag.String("debug", "", "Insert Local File for development")
 	flag.Parse()
 
 	if *configurationFile == "" {
@@ -41,11 +63,13 @@ func main() {
 	}
 
 	// Parse the data into the Config struct
-	var remoteConfig RemoteAPIInfo
-	if err := yaml.Unmarshal(data, &remoteConfig); err != nil {
+	var deploymentConfig deploymentRepositories
+	if err := yaml.Unmarshal(data, &deploymentConfig); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	// Print the data
-	fmt.Printf("%+v\n", remoteConfig)
+	fmt.Printf("%+v\n", deploymentConfig)
+
+	loadlocalChart(*debugChart)
+
 }
