@@ -40,7 +40,7 @@ func loadlocalChart(pathToLocalChart string) {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	fmt.Printf("%+v\n", helmConfig)
+	// fmt.Printf("%+v\n", helmConfig)
 }
 
 func main() {
