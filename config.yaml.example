@@ -1,7 +1,0 @@
-apiInfo:
-  - url: example.donut
-    uri: /api/v1/packages/food
-    chartInfo:
-      - repository: glazed
-        chart:
-          - name: danish
