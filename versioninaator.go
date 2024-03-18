@@ -9,12 +9,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type deploymentRepositories struct {
-	DeploymentRepositories []struct {
-		RepoURL string `yaml:"URL"`
-		Path    string `yaml:"path"`
-		Branch  string `yaml:"branch"`
-	} `yaml:"deploymentRepositories"`
+type versioninaatorTargets struct {
+	Targets []struct {
+		URL    string `yaml:"URL"`
+		Path   string `yaml:"path"`
+		Branch string `yaml:"branch"`
+	} `yaml:"targets"`
 }
 
 type helmChart struct {
@@ -27,7 +27,19 @@ type helmChart struct {
 	} `yaml:"dependencies"`
 }
 
-func loadlocalChart(pathToLocalChart string) {
+type helmRepository struct {
+	Repository []struct {
+		Test       string `yaml:"URL"`
+		Dependency []struct {
+			Name          string `yaml:"name"`
+			Version       string `yaml:"version"`
+			UsedChart     string `yaml:"usedChart"`
+			UsedChartName string `yaml:"usedChartName"`
+		} `yaml:"dependencies"`
+	} `yaml:"repository"`
+}
+
+func loadlocalChart(pathToLocalChart string) helmChart {
 	data, err := os.ReadFile(pathToLocalChart)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
@@ -38,12 +50,12 @@ func loadlocalChart(pathToLocalChart string) {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	// fmt.Printf("%+v\n", helmConfig)
+	return helmConfig
 }
 
 func main() {
+	// baseChartYaml := "Chart.yaml"
 	configurationFile := flag.String("config", "", "Path to the configuration file")
-	debugChart := flag.String("debug", "", "Insert Local File for development")
 	flag.Parse()
 
 	if *configurationFile == "" {
@@ -61,13 +73,31 @@ func main() {
 	}
 
 	// Parse the data into the Config struct
-	var deploymentConfig deploymentRepositories
-	if err := yaml.Unmarshal(data, &deploymentConfig); err != nil {
+	var targetConfigs versioninaatorTargets
+	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
+		log.Fatalf("Failed to parse data: %v", err)
+	}
+	// for _, targetConfig := range targetConfigs.Targets {
+	// 	targetHelmChart := loadlocalChart(targetConfig.Path + baseChartYaml)
+
+	// 	fmt.Printf("%s\n", targetConfig)
+	// 	fmt.Printf("%s", targetHelmChart)
+	// }
+
+	fmt.Printf("%s", extraTest().Repository)
+
+}
+
+func extraTest() helmRepository {
+	data, err := os.ReadFile("test/remote.yaml")
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var helmConfig helmRepository
+	if err := yaml.Unmarshal(data, &helmConfig); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	fmt.Printf("%+v\n", deploymentConfig)
-
-	loadlocalChart(*debugChart)
-
+	return helmConfig
 }
