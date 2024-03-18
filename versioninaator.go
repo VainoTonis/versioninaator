@@ -13,15 +13,13 @@ type deploymentRepositories struct {
 	DeploymentRepositories []struct {
 		RepoURL string `yaml:"URL"`
 		Path    string `yaml:"path"`
+		Branch  string `yaml:"branch"`
 	} `yaml:"deploymentRepositories"`
 }
 
 type helmChart struct {
 	ApiVersion   string `yaml:"apiVersion"`
 	Name         string `yaml:"name"`
-	Description  string `yaml:"description"`
-	Version      string `yaml:""`
-	AppVersion   string `yaml:"appVersion"`
 	Dependencies []struct {
 		Name       string `yaml:"name"`
 		Version    string `yaml:"version"`
