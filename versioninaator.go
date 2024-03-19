@@ -29,32 +29,19 @@ type helmChart struct {
 
 type helmRepository struct {
 	Repository []struct {
-		Test       string `yaml:"URL"`
+		URL        string `yaml:"URL"`
 		Dependency []struct {
 			Name          string `yaml:"name"`
 			Version       string `yaml:"version"`
 			UsedChart     string `yaml:"usedChart"`
 			UsedChartName string `yaml:"usedChartName"`
+			UsedChartPath string `yaml:"usedPath"`
 		} `yaml:"dependencies"`
 	} `yaml:"repository"`
 }
 
-func loadlocalChart(pathToLocalChart string) helmChart {
-	data, err := os.ReadFile(pathToLocalChart)
-	if err != nil {
-		log.Fatalf("Failed to read file: %v", err)
-	}
-
-	var helmConfig helmChart
-	if err := yaml.Unmarshal(data, &helmConfig); err != nil {
-		log.Fatalf("Failed to parse data: %v", err)
-	}
-
-	return helmConfig
-}
-
 func main() {
-	// baseChartYaml := "Chart.yaml"
+	baseChartYaml := "Chart.yaml"
 	configurationFile := flag.String("config", "", "Path to the configuration file")
 	flag.Parse()
 
@@ -77,24 +64,22 @@ func main() {
 	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
-	// for _, targetConfig := range targetConfigs.Targets {
-	// 	targetHelmChart := loadlocalChart(targetConfig.Path + baseChartYaml)
+	for _, targetConfig := range targetConfigs.Targets {
+		targetHelmChart := loadlocalChart(targetConfig.Path + baseChartYaml)
 
-	// 	fmt.Printf("%s\n", targetConfig)
-	// 	fmt.Printf("%s", targetHelmChart)
-	// }
-
-	fmt.Printf("%s", extraTest().Repository)
+		fmt.Printf("%s\n", targetConfig)
+		fmt.Printf("%s", targetHelmChart)
+	}
 
 }
 
-func extraTest() helmRepository {
-	data, err := os.ReadFile("test/remote.yaml")
+func loadlocalChart(pathToLocalChart string) helmChart {
+	data, err := os.ReadFile(pathToLocalChart)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
 
-	var helmConfig helmRepository
+	var helmConfig helmChart
 	if err := yaml.Unmarshal(data, &helmConfig); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
