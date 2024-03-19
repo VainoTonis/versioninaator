@@ -28,20 +28,24 @@ type helmChart struct {
 }
 
 type helmRepository struct {
-	Repository []struct {
-		URL        string `yaml:"URL"`
-		Dependency []struct {
-			Name          string `yaml:"name"`
-			Version       string `yaml:"version"`
-			UsedChart     string `yaml:"usedChart"`
-			UsedChartName string `yaml:"usedChartName"`
-			UsedChartPath string `yaml:"usedPath"`
-		} `yaml:"dependencies"`
-	} `yaml:"repository"`
+	Repository []helmRepositoryDetails `yaml:"repository"`
+}
+
+type helmRepositoryDetails struct {
+	URL        string                  `yaml:"URL"`
+	Dependency []applicationDependency `yaml:"dependencies"`
+}
+
+type applicationDependency struct {
+	Name          string `yaml:"name"`
+	Version       string `yaml:"version"`
+	UsedChart     string `yaml:"usedChart"`
+	UsedChartName string `yaml:"usedChartName"`
+	UsedChartPath string `yaml:"UsedChartPath"`
 }
 
 func main() {
-	baseChartYaml := "Chart.yaml"
+	// baseChartYaml := "Chart.yaml"
 	configurationFile := flag.String("config", "", "Path to the configuration file")
 	flag.Parse()
 
@@ -64,11 +68,26 @@ func main() {
 	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
-	for _, targetConfig := range targetConfigs.Targets {
-		targetHelmChart := loadlocalChart(targetConfig.Path + baseChartYaml)
 
-		fmt.Printf("%s\n", targetConfig)
-		fmt.Printf("%s", targetHelmChart)
+	for _, targetConfig := range targetConfigs.Targets {
+		targetHelmChart := loadlocalChart(targetConfig.Path)
+
+		for _, dependency := range targetHelmChart.Dependencies {
+			testOfCustomStruct := helmRepository{
+				Repository: []helmRepositoryDetails{{
+					URL: dependency.Repository,
+					Dependency: []applicationDependency{{
+						Name:          dependency.Name,
+						Version:       dependency.Version,
+						UsedChart:     targetConfig.URL,
+						UsedChartName: targetHelmChart.Name,
+						UsedChartPath: targetConfig.Path,
+					}},
+				}},
+			}
+
+			fmt.Printf("%s\n", testOfCustomStruct)
+		}
 	}
 
 }
