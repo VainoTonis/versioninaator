@@ -28,7 +28,7 @@ type helmChart struct {
 }
 
 type helmRepository struct {
-	Repository []helmRepositoryDetails `yaml:"repository"`
+	Repository helmRepositoryDetails `yaml:"repository"`
 }
 
 type helmRepositoryDetails struct {
@@ -69,27 +69,53 @@ func main() {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
+	// Find and sort every dependency by repository URL
+	depenenciesByRepository := []helmRepository{}
+
 	for _, targetConfig := range targetConfigs.Targets {
 		targetHelmChart := loadlocalChart(targetConfig.Path)
 
 		for _, dependency := range targetHelmChart.Dependencies {
-			testOfCustomStruct := helmRepository{
-				Repository: []helmRepositoryDetails{{
-					URL: dependency.Repository,
-					Dependency: []applicationDependency{{
-						Name:          dependency.Name,
-						Version:       dependency.Version,
-						UsedChart:     targetConfig.URL,
-						UsedChartName: targetHelmChart.Name,
-						UsedChartPath: targetConfig.Path,
-					}},
-				}},
+			repositoryExists := false
+			applicationDepenencyDetails := []applicationDependency{{
+				Name:          dependency.Name,
+				Version:       dependency.Version,
+				UsedChart:     targetConfig.URL,
+				UsedChartName: targetHelmChart.Name,
+				UsedChartPath: targetConfig.Path,
+			}}
+
+			// Check for already existing repositories
+
+			for repositoryIndex, existingDependencyRepository := range depenenciesByRepository {
+
+				if dependency.Repository == existingDependencyRepository.Repository.URL {
+					depenenciesByRepository[repositoryIndex].Repository.Dependency = append(depenenciesByRepository[repositoryIndex].Repository.Dependency, applicationDepenencyDetails...)
+					repositoryExists = true
+					break
+				}
 			}
 
-			fmt.Printf("%s\n", testOfCustomStruct)
+			// To avoid copy pasta same code a check goes through to either initialize the array or add a new entry to that array
+			if len(depenenciesByRepository) == 0 || !repositoryExists {
+				newDependencyRepository := helmRepository{
+					Repository: helmRepositoryDetails{
+						URL:        dependency.Repository,
+						Dependency: applicationDepenencyDetails,
+					},
+				}
+				depenenciesByRepository = append(depenenciesByRepository, newDependencyRepository)
+			}
 		}
 	}
 
+	marshaledDepenenciesByRepository, err := yaml.Marshal(depenenciesByRepository)
+	if err != nil {
+		fmt.Println("Error marshalling to YAML:", err)
+		return
+	}
+
+	fmt.Print(string(marshaledDepenenciesByRepository))
 }
 
 func loadlocalChart(pathToLocalChart string) helmChart {
