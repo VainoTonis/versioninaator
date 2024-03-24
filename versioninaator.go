@@ -57,23 +57,18 @@ func main() {
 		*configurationFile = envVariableFile
 	}
 
-	// Read the YAML file
-	data, err := os.ReadFile(*configurationFile)
-	if err != nil {
-		log.Fatalf("Failed to read file: %v", err)
-	}
+	test := getTargetDependencies(*configurationFile)
+	fmt.Print(test)
+}
 
-	// Parse the data into the Config struct
-	var targetConfigs versioninaatorTargets
-	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
-		log.Fatalf("Failed to parse data: %v", err)
-	}
+func getTargetDependencies(configurationFile string) []helmRepository {
+	targetConfigs := readConfiguration(configurationFile)
 
 	// Find and sort every dependency by repository URL
 	depenenciesByRepository := []helmRepository{}
 
 	for _, targetConfig := range targetConfigs.Targets {
-		targetHelmChart := loadlocalChart(targetConfig.Path)
+		targetHelmChart := readChart(targetConfig.Path)
 
 		for _, dependency := range targetHelmChart.Dependencies {
 			repositoryExists := false
@@ -109,25 +104,35 @@ func main() {
 		}
 	}
 
-	marshaledDepenenciesByRepository, err := yaml.Marshal(depenenciesByRepository)
-	if err != nil {
-		fmt.Println("Error marshalling to YAML:", err)
-		return
-	}
-
-	fmt.Print(string(marshaledDepenenciesByRepository))
+	return depenenciesByRepository
 }
 
-func loadlocalChart(pathToLocalChart string) helmChart {
-	data, err := os.ReadFile(pathToLocalChart)
+func readConfiguration(configurationFile string) versioninaatorTargets {
+	var targetConfigs versioninaatorTargets
+	// Read the YAML file
+	data, err := os.ReadFile(configurationFile)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
 
-	var helmConfig helmChart
-	if err := yaml.Unmarshal(data, &helmConfig); err != nil {
+	// Parse the data into the Config struct
+	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	return helmConfig
+	return targetConfigs
+}
+
+func readChart(pathToLocalChart string) helmChart {
+	rawChart, err := os.ReadFile(pathToLocalChart)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var unmarshaledChart helmChart
+	if err := yaml.Unmarshal(rawChart, &unmarshaledChart); err != nil {
+		log.Fatalf("Failed to parse data: %v", err)
+	}
+
+	return unmarshaledChart
 }
