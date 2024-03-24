@@ -56,13 +56,12 @@ func main() {
 		}
 		*configurationFile = envVariableFile
 	}
-
-	test := getTargetDependencies(*configurationFile)
-	fmt.Print(test)
+	targetConfigs := readConfiguration(*configurationFile)
+	targetDependencies := getTargetDependencies(targetConfigs)
+	fmt.Print(targetDependencies)
 }
 
-func getTargetDependencies(configurationFile string) []helmRepository {
-	targetConfigs := readConfiguration(configurationFile)
+func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository {
 
 	// Find and sort every dependency by repository URL
 	depenenciesByRepository := []helmRepository{}
