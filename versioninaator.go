@@ -61,6 +61,23 @@ func main() {
 	fmt.Print(targetDependencies)
 }
 
+func readConfiguration(configurationFile string) versioninaatorTargets {
+	var targetConfigs versioninaatorTargets
+	// Read the YAML file
+	data, err := os.ReadFile(configurationFile)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	// Parse the data into the Config struct
+	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
+		log.Fatalf("Failed to parse data: %v", err)
+	}
+
+	log.Println(targetConfigs)
+	return targetConfigs
+}
+
 func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository {
 
 	// Find and sort every dependency by repository URL
@@ -104,22 +121,6 @@ func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository
 	}
 
 	return depenenciesByRepository
-}
-
-func readConfiguration(configurationFile string) versioninaatorTargets {
-	var targetConfigs versioninaatorTargets
-	// Read the YAML file
-	data, err := os.ReadFile(configurationFile)
-	if err != nil {
-		log.Fatalf("Failed to read file: %v", err)
-	}
-
-	// Parse the data into the Config struct
-	if err := yaml.Unmarshal(data, &targetConfigs); err != nil {
-		log.Fatalf("Failed to parse data: %v", err)
-	}
-
-	return targetConfigs
 }
 
 func readChart(pathToLocalChart string) helmChart {
