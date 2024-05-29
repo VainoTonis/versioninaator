@@ -32,7 +32,7 @@ type helmChartDependencies struct {
 }
 
 type inUseHelmRepositories struct {
-	Repository string                         `yaml:"repository"`
+	URL        string                         `yaml:"url"`
 	Dependency []inUseApplicationDependencies `yaml:"dependencies"`
 }
 
@@ -119,7 +119,7 @@ func getTargetDependencies(targetConfigs versioninaator) []inUseHelmRepositories
 
 			for repositoryIndex, existingDependencyRepository := range depenenciesByRepository {
 
-				if dependency.Repository == existingDependencyRepository.Repository {
+				if dependency.Repository == existingDependencyRepository.URL {
 					depenenciesByRepository[repositoryIndex].Dependency = append(depenenciesByRepository[repositoryIndex].Dependency, applicationDepenencyDetails...)
 					repositoryExists = true
 					break
@@ -129,7 +129,7 @@ func getTargetDependencies(targetConfigs versioninaator) []inUseHelmRepositories
 			// To avoid copy pasta same code a check goes through to either initialize the array or add a new entry to that array
 			if len(depenenciesByRepository) == 0 || !repositoryExists {
 				newDependencyRepository := inUseHelmRepositories{
-					Repository: dependency.Repository,
+					URL: dependency.Repository,
 					Dependency: applicationDepenencyDetails,
 				}
 				depenenciesByRepository = append(depenenciesByRepository, newDependencyRepository)
@@ -155,13 +155,10 @@ func readChart(pathToLocalChart string) helmChart {
 }
 
 func getLatestDependencies(inUseHelmRepositories []inUseHelmRepositories) {
-	fmt.Println()
-
-	marshaled, err := yaml.Marshal(inUseHelmRepositories)
-	if err != nil {
-		log.Fatalf("Failed to marshal data: %v", err)
+	for _, repository := range inUseHelmRepositories {
+		fmt.Println(repository.URL)
+		for _, dependency := range repository.Dependency {
+			fmt.Println(dependency.Name)
+		}
 	}
-	fmt.Println(string(marshaled))
-
-	
 }
