@@ -9,39 +9,52 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type versioninaator struct {
+	ApiVersion string                  `yaml:"apiVersion"`
+	Targets    []versioninaatorTargets `yaml:"targets"`
+}
+
 type versioninaatorTargets struct {
-	Targets []struct {
-		URL    string `yaml:"URL"`
-		Path   string `yaml:"path"`
-		Branch string `yaml:"branch"`
-	} `yaml:"targets"`
+	URL    string `yaml:"URL"`
+	Path   string `yaml:"path"`
+	Branch string `yaml:"branch"`
 }
 
 type helmChart struct {
-	ApiVersion   string `yaml:"apiVersion"`
-	Name         string `yaml:"name"`
-	Dependencies []struct {
-		Name       string `yaml:"name"`
-		Version    string `yaml:"version"`
-		Repository string `yaml:"repository"`
-	} `yaml:"dependencies"`
+	ApiVersion   string                  `yaml:"apiVersion"`
+	Name         string                  `yaml:"name"`
+	Dependencies []helmChartDependencies `yaml:"dependencies"`
+}
+type helmChartDependencies struct {
+	Name       string `yaml:"name"`
+	Version    string `yaml:"version"`
+	Repository string `yaml:"repository"`
 }
 
-type helmRepository struct {
-	Repository helmRepositoryDetails `yaml:"repository"`
+type inUseHelmRepositories struct {
+	Repository string                         `yaml:"repository"`
+	Dependency []inUseApplicationDependencies `yaml:"dependencies"`
 }
 
-type helmRepositoryDetails struct {
-	URL        string                  `yaml:"URL"`
-	Dependency []applicationDependency `yaml:"dependencies"`
-}
-
-type applicationDependency struct {
+type inUseApplicationDependencies struct {
 	Name          string `yaml:"name"`
 	Version       string `yaml:"version"`
 	UsedChart     string `yaml:"usedChart"`
 	UsedChartName string `yaml:"usedChartName"`
 	UsedChartPath string `yaml:"UsedChartPath"`
+}
+
+type helmRepositoryIndex struct {
+	ApiVersion string                                `yaml:"apiVersion"`
+	Entries    map[string]helmRepositoryIndexEntries `yaml:"entries"`
+}
+
+type helmRepositoryIndexEntries struct {
+	ApiVersion string `yaml:"apiVersion"`
+	AppVersion string `yaml:"appVersion"`
+	Version    string `yaml:"version"`
+	Name       string `yaml:"name"`
+	Created    string `yaml:"created"`
 }
 
 func main() {
@@ -58,11 +71,18 @@ func main() {
 	}
 	targetConfigs := readConfiguration(*configurationFile)
 	targetDependencies := getTargetDependencies(targetConfigs)
-	fmt.Print(targetDependencies)
+	getLatestDependencies(targetDependencies)
+
+	/*
+		get every repository and every unique dependecy name
+		get the latest versions of every dependency and when they were released
+		Create a list of charts that use outdated dependencies
+		create custom metrics to show the results
+	*/
 }
 
-func readConfiguration(configurationFile string) versioninaatorTargets {
-	var targetConfigs versioninaatorTargets
+func readConfiguration(configurationFile string) versioninaator {
+	var targetConfigs versioninaator
 	// Read the YAML file
 	data, err := os.ReadFile(configurationFile)
 	if err != nil {
@@ -74,21 +94,20 @@ func readConfiguration(configurationFile string) versioninaatorTargets {
 		log.Fatalf("Failed to parse data: %v", err)
 	}
 
-	log.Println(targetConfigs)
 	return targetConfigs
 }
 
-func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository {
+func getTargetDependencies(targetConfigs versioninaator) []inUseHelmRepositories {
 
 	// Find and sort every dependency by repository URL
-	depenenciesByRepository := []helmRepository{}
+	depenenciesByRepository := []inUseHelmRepositories{}
 
 	for _, targetConfig := range targetConfigs.Targets {
 		targetHelmChart := readChart(targetConfig.Path)
 
 		for _, dependency := range targetHelmChart.Dependencies {
 			repositoryExists := false
-			applicationDepenencyDetails := []applicationDependency{{
+			applicationDepenencyDetails := []inUseApplicationDependencies{{
 				Name:          dependency.Name,
 				Version:       dependency.Version,
 				UsedChart:     targetConfig.URL,
@@ -100,8 +119,8 @@ func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository
 
 			for repositoryIndex, existingDependencyRepository := range depenenciesByRepository {
 
-				if dependency.Repository == existingDependencyRepository.Repository.URL {
-					depenenciesByRepository[repositoryIndex].Repository.Dependency = append(depenenciesByRepository[repositoryIndex].Repository.Dependency, applicationDepenencyDetails...)
+				if dependency.Repository == existingDependencyRepository.Repository {
+					depenenciesByRepository[repositoryIndex].Dependency = append(depenenciesByRepository[repositoryIndex].Dependency, applicationDepenencyDetails...)
 					repositoryExists = true
 					break
 				}
@@ -109,11 +128,9 @@ func getTargetDependencies(targetConfigs versioninaatorTargets) []helmRepository
 
 			// To avoid copy pasta same code a check goes through to either initialize the array or add a new entry to that array
 			if len(depenenciesByRepository) == 0 || !repositoryExists {
-				newDependencyRepository := helmRepository{
-					Repository: helmRepositoryDetails{
-						URL:        dependency.Repository,
-						Dependency: applicationDepenencyDetails,
-					},
+				newDependencyRepository := inUseHelmRepositories{
+					Repository: dependency.Repository,
+					Dependency: applicationDepenencyDetails,
 				}
 				depenenciesByRepository = append(depenenciesByRepository, newDependencyRepository)
 			}
@@ -135,4 +152,16 @@ func readChart(pathToLocalChart string) helmChart {
 	}
 
 	return unmarshaledChart
+}
+
+func getLatestDependencies(inUseHelmRepositories []inUseHelmRepositories) {
+	fmt.Println()
+
+	marshaled, err := yaml.Marshal(inUseHelmRepositories)
+	if err != nil {
+		log.Fatalf("Failed to marshal data: %v", err)
+	}
+	fmt.Println(string(marshaled))
+
+	
 }
