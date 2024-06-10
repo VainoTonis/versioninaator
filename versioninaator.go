@@ -45,8 +45,8 @@ type inUseApplicationDependencies struct {
 }
 
 type helmRepositoryIndex struct {
-	ApiVersion string                                `yaml:"apiVersion"`
-	Entries    map[string]helmRepositoryIndexEntries `yaml:"entries"`
+	ApiVersion string                                  `yaml:"apiVersion"`
+	Entries    map[string][]helmRepositoryIndexEntries `yaml:"entries"`
 }
 
 type helmRepositoryIndexEntries struct {
@@ -129,7 +129,7 @@ func getTargetDependencies(targetConfigs versioninaator) []inUseHelmRepositories
 			// To avoid copy pasta same code a check goes through to either initialize the array or add a new entry to that array
 			if len(depenenciesByRepository) == 0 || !repositoryExists {
 				newDependencyRepository := inUseHelmRepositories{
-					URL: dependency.Repository,
+					URL:        dependency.Repository,
 					Dependency: applicationDepenencyDetails,
 				}
 				depenenciesByRepository = append(depenenciesByRepository, newDependencyRepository)
@@ -155,10 +155,28 @@ func readChart(pathToLocalChart string) helmChart {
 }
 
 func getLatestDependencies(inUseHelmRepositories []inUseHelmRepositories) {
+
+	var latestDependencies []helmRepositoryIndex
+
 	for _, repository := range inUseHelmRepositories {
-		fmt.Println(repository.URL)
-		for _, dependency := range repository.Dependency {
-			fmt.Println(dependency.Name)
-		}
+		latestDependencies = append(latestDependencies, readRepositoryIndex(repository.URL)...)
 	}
+
+	fmt.Println(latestDependencies)
+}
+
+func readRepositoryIndex(repositoryURL string) []helmRepositoryIndex {
+	rawIndex, err := os.ReadFile(repositoryURL)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var unmarshaledIndex helmRepositoryIndex
+	if err := yaml.Unmarshal(rawIndex, &unmarshaledIndex); err != nil {
+		log.Fatalf("Failed to parse data: %v", err)
+	}
+
+	var latestVersions []helmRepositoryIndex
+	latestVersions = append(latestVersions, unmarshaledIndex.Entries)
+	return latestVersions
 }
